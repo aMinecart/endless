@@ -11,7 +11,7 @@ public class PlayerMovement : MonoBehaviour
     private Vector2 moveDir;
 
     private float speed = 3f;
-    private float acceleration = 1f;
+    private float acceleration = 5f;
 
     private Vector2 accelerate(Vector2 currVel, Vector2 accelDir, float accelRate, float maxVel)
     {
@@ -19,20 +19,26 @@ public class PlayerMovement : MonoBehaviour
         {
             return currVel;
         }
-        
-        float velRatio = (maxVel - currVel.magnitude) / maxVel;
-        float angleBetween = Vector2.Angle(currVel, accelDir);
 
-        //accelRate *= Mathf.Clamp01(velRatio + 0.5f) - angleBetween;
+        // multiplying the acceleration by the max velocity makes it so that the player accelerates up to max velocity in the same amount of time, not matter how big it is
+        float accelX = accelDir.x * accelRate * maxVel * Time.fixedDeltaTime;
 
-        accelRate *= velRatio;
+        if (Mathf.Sign(currVel.x) == Mathf.Sign(accelDir.x))
+        {
+            print("slowing");
+            //print(maxVel - Mathf.Abs(currVel.x) / maxVel);
+            accelX *= maxVel - Mathf.Abs(currVel.x) / maxVel; // lower acceleration as current x speed gets closer to max speed
+        }
 
-        print(accelRate);
+        // print(accelX);
+        float accelY = accelDir.y * accelRate * maxVel * Time.fixedDeltaTime;
 
-        float accelMag = accelRate * maxVel * Time.fixedDeltaTime; // multiplying the acceleration by the max velocity makes it so that the player accelerates up to max velocity in the same amount of time, not matter how big it is
-        Vector2 newVel = currVel + accelMag * accelDir;
-
-        return Vector2.ClampMagnitude(newVel, maxVel);
+        if (Mathf.Sign(currVel.y) == Mathf.Sign(accelDir.y))
+        {
+            accelX *= (Mathf.Sqrt(maxVel) - currVel.y) / Mathf.Sqrt(maxVel); // lower acceleration as current y speed gets closer to max speed
+        }
+        // print(accelY);
+        return currVel + new Vector2(accelX, accelY);
     }
 
     // Start is called before the first frame update
