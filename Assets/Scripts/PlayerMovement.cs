@@ -4,16 +4,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
-using TMPro;
 
 public class PlayerMovement : MonoBehaviour
 {
-    private int timer = 0;
-    private int dashCooldown = 60;
-
-    [SerializeField] private Image dashCooldownImage;
-    [SerializeField] private Button dashImage;
-
     private Rigidbody2D rb;
 
     private Vector2 moveDir;
@@ -22,9 +15,16 @@ public class PlayerMovement : MonoBehaviour
     private float maxSpeed = 10.0f;
 
     private float acceleration = 5.0f;
+
     private float friction = 4.0f;
 
+    private bool dashing = false;
     private float dashStrength = 1.5f;
+    private float dashCooldown = 60.0f;
+
+    private float dashTimer = 0.0f;
+    [SerializeField] private Image dashCooldownImage;
+    [SerializeField] private Button dashImage;
 
     private Vector2 accelerate(Vector2 currVel, Vector2 accelDir, float accelRate, float maxVel)
     {
@@ -38,7 +38,7 @@ public class PlayerMovement : MonoBehaviour
 
         if (Mathf.Abs(currVel.x) > maxVel / 2 && Mathf.Sign(currVel.x) == Mathf.Sign(accelDir.x))
         {
-            print("slowing (x)");
+            // print("slowing (x)");
             accelX *= Mathf.Clamp01((maxVel - Mathf.Abs(currVel.x) + 0.5f)) / maxVel; // lower acceleration as current x speed gets closer to max speed
         }
         // print(accelX);
@@ -47,7 +47,7 @@ public class PlayerMovement : MonoBehaviour
 
         if (Mathf.Abs(currVel.y) > maxVel / 2 && Mathf.Sign(currVel.y) == Mathf.Sign(accelDir.y))
         {
-            print("slowing (y)");
+            // print("slowing (y)");
             accelY *= Mathf.Clamp01((maxVel - Mathf.Abs(currVel.y) + 0.5f)) / maxVel; // lower acceleration as current x speed gets closer to max speed
         }
         // print(accelY);
@@ -55,9 +55,9 @@ public class PlayerMovement : MonoBehaviour
         return currVel + new Vector2(accelX, accelY);
     }
 
-    private Vector2 applyFriction(Vector2 currVel, float friction)
+    private Vector2 applyFriction(Vector2 currVel, Vector2 accelDir, float friction)
     {
-        // test and improve this function
+        // add scaling based on changes to maximum speed (maxSpeed is currently the max speed in the x or y direction, not both)
 
         if (currVel.magnitude == 0)
         {
@@ -67,6 +67,12 @@ public class PlayerMovement : MonoBehaviour
         float speed = currVel.magnitude;
         // float reduction = speed < stopSpeed ? stopSpeed * friction * Time.fixedDeltaTime : speed * friction * Time.fixedDeltaTime;
         float reduction = friction * Time.fixedDeltaTime;
+
+        if (accelDir == Vector2.zero)
+        {
+            reduction *= 2;
+        }
+        
 
         // multiply current velocity by new speed and divide by current speed to set magnitude equal to the new value (cannot subtract from the vector's magnitude) 
         currVel *= Mathf.Max(speed - reduction, 0) / speed;  
@@ -78,6 +84,22 @@ public class PlayerMovement : MonoBehaviour
     {
         return accelDir != Vector2.zero ? accelDir * currVel.magnitude * dashStrength : currVel * dashStrength / 6.0f;
     }
+
+
+    private void handleTimers()
+    {
+        if (dashTimer > 0)
+        {
+            dashTimer--;
+            dashCooldownImage.fillAmount = dashTimer / dashCooldown;
+        }
+        
+        if (dashTimer < dashCooldown - 15.0f)
+        {
+            dashing = false;
+        }
+    }
+
 
     // Start is called before the first frame update
     void Start()
@@ -95,30 +117,30 @@ public class PlayerMovement : MonoBehaviour
 
     private void OnDash(InputValue iV)
     {
-        if (timer != 0)
+        if (dashTimer > 0.0f)
         {
             return;
         }
-        
-        rb.velocity = dash(rb.velocity, moveDir, dashStrength);
-        timer = dashCooldown;
+
+        dashing = true;
+        dashTimer = dashCooldown;
         dashCooldownImage.fillAmount = 1.0f;
+        rb.velocity = dash(rb.velocity, moveDir, dashStrength);
     }
 
     // Update is called once per frame
     void FixedUpdate()
     {
-        if (timer > 0)
+        handleTimers();
+
+        // print(dashCooldownImage.fillAmount);
+
+        if (!dashing)
         {
-            timer--;
-            dashCooldownImage.fillAmount = timer / dashCooldown;
+            rb.velocity = applyFriction(rb.velocity, moveDir, friction);
+            rb.velocity = accelerate(rb.velocity, moveDir, acceleration, maxSpeed);
         }
-        
-        print(dashCooldownImage.fillAmount);
 
-        rb.velocity = applyFriction(rb.velocity, friction);
-        rb.velocity = accelerate(rb.velocity, moveDir, acceleration, maxSpeed);
-
-        // print(rb.velocity.magnitude);
+        print(rb.velocity.magnitude);
     }
 }
