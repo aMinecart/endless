@@ -3,18 +3,28 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
+using TMPro;
 
 public class PlayerMovement : MonoBehaviour
 {
+    private int timer = 0;
+    private int dashCooldown = 60;
+
+    [SerializeField] private Image dashCooldownImage;
+    [SerializeField] private Button dashImage;
+
     private Rigidbody2D rb;
 
     private Vector2 moveDir;
 
-    private float minSpeed = 1.0f;
+    // private float minSpeed = 1.0f;
     private float maxSpeed = 10.0f;
 
     private float acceleration = 5.0f;
     private float friction = 4.0f;
+
+    private float dashStrength = 1.5f;
 
     private Vector2 accelerate(Vector2 currVel, Vector2 accelDir, float accelRate, float maxVel)
     {
@@ -45,7 +55,7 @@ public class PlayerMovement : MonoBehaviour
         return currVel + new Vector2(accelX, accelY);
     }
 
-    private Vector2 applyFriction(Vector2 currVel, float friction, float stopSpeed)
+    private Vector2 applyFriction(Vector2 currVel, float friction)
     {
         // test and improve this function
 
@@ -55,7 +65,8 @@ public class PlayerMovement : MonoBehaviour
         }
 
         float speed = currVel.magnitude;
-        float reduction = speed < stopSpeed ? speed * friction * Time.fixedDeltaTime : stopSpeed * friction * Time.fixedDeltaTime;
+        // float reduction = speed < stopSpeed ? stopSpeed * friction * Time.fixedDeltaTime : speed * friction * Time.fixedDeltaTime;
+        float reduction = friction * Time.fixedDeltaTime;
 
         // multiply current velocity by new speed and divide by current speed to set magnitude equal to the new value (cannot subtract from the vector's magnitude) 
         currVel *= Mathf.Max(speed - reduction, 0) / speed;  
@@ -63,10 +74,17 @@ public class PlayerMovement : MonoBehaviour
         return currVel;
     }
 
+    private Vector2 dash(Vector2 currVel, Vector2 accelDir, float dashStrength)
+    {
+        return accelDir != Vector2.zero ? accelDir * currVel.magnitude * dashStrength : currVel * dashStrength / 6.0f;
+    }
+
     // Start is called before the first frame update
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
+
+        dashCooldownImage.fillAmount = 0.0f;
     }
 
     private void OnMove(InputValue moveValue)
@@ -75,12 +93,32 @@ public class PlayerMovement : MonoBehaviour
         // print(moveDir);
     }
 
+    private void OnDash(InputValue iV)
+    {
+        if (timer != 0)
+        {
+            return;
+        }
+        
+        rb.velocity = dash(rb.velocity, moveDir, dashStrength);
+        timer = dashCooldown;
+        dashCooldownImage.fillAmount = 1.0f;
+    }
+
     // Update is called once per frame
     void FixedUpdate()
     {
-        rb.velocity = applyFriction(rb.velocity, friction, minSpeed);
+        if (timer > 0)
+        {
+            timer--;
+            dashCooldownImage.fillAmount = timer / dashCooldown;
+        }
+        
+        print(dashCooldownImage.fillAmount);
+
+        rb.velocity = applyFriction(rb.velocity, friction);
         rb.velocity = accelerate(rb.velocity, moveDir, acceleration, maxSpeed);
 
-        print(rb.velocity.magnitude);
+        // print(rb.velocity.magnitude);
     }
 }
