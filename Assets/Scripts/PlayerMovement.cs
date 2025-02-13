@@ -26,6 +26,9 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private Image dashCooldownImage;
     [SerializeField] private Button dashImage;
 
+    private List<float> speeds = new();
+    private float avgSpeed = 0;
+
     private Vector2 accelerate(Vector2 currVel, Vector2 accelDir, float accelRate, float maxVel)
     {
         if (accelDir == Vector2.zero)
@@ -80,14 +83,23 @@ public class PlayerMovement : MonoBehaviour
         return currVel;
     }
 
-    private Vector2 dash(Vector2 currVel, Vector2 accelDir, float dashStrength)
+    private Vector2 dash(Vector2 currVel, Vector2 accelDir, float dashStrength, float avgSpeed)
     {
-        return accelDir != Vector2.zero ? accelDir * currVel.magnitude * dashStrength : currVel * dashStrength / 6.0f;
+        float dashSpeed = Mathf.Max(currVel.magnitude, avgSpeed);
+        
+        print(dashSpeed);
+
+        return accelDir != Vector2.zero ? accelDir * dashSpeed * dashStrength : currVel.normalized * dashSpeed * dashStrength;
     }
 
 
     private void handleTimers()
     {
+        speeds.Add(rb.velocity.magnitude);
+        
+        if (speeds.Count > 5)
+            speeds.RemoveAt(0);
+
         if (dashTimer > 0)
         {
             dashTimer--;
@@ -100,6 +112,27 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
+    private void storeCurrSpeed()
+    {
+        speeds.Add(rb.velocity.magnitude);
+
+        if (speeds.Count > 5)
+        {
+            speeds.RemoveAt(0);
+        }
+    }
+
+    private void findAvgSpeed()
+    {
+        avgSpeed = 0.0f;
+
+        foreach (float speed in speeds)
+        {
+            avgSpeed += speed;
+        }
+
+        avgSpeed /= speeds.Count;
+    }
 
     // Start is called before the first frame update
     void Start()
@@ -125,13 +158,15 @@ public class PlayerMovement : MonoBehaviour
         dashing = true;
         dashTimer = dashCooldown;
         dashCooldownImage.fillAmount = 1.0f;
-        rb.velocity = dash(rb.velocity, moveDir, dashStrength);
+        rb.velocity = dash(rb.velocity, moveDir, dashStrength, maxSpeed);
     }
 
     // Update is called once per frame
     void FixedUpdate()
     {
         handleTimers();
+        storeCurrSpeed();
+        findAvgSpeed();
 
         // print(dashCooldownImage.fillAmount);
 
@@ -141,6 +176,6 @@ public class PlayerMovement : MonoBehaviour
             rb.velocity = accelerate(rb.velocity, moveDir, acceleration, maxSpeed);
         }
 
-        print(rb.velocity.magnitude);
+        // print(rb.velocity.magnitude);
     }
 }
