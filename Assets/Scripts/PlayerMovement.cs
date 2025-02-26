@@ -7,20 +7,21 @@ using UnityEngine.UI;
 
 public class PlayerMovement : MonoBehaviour
 {
-    private Rigidbody2D rb;
+    private Rigidbody2D rb; // rigidbody attached to the player
 
-    private Vector2 moveDir;
+    private Vector2 moveDir; // the direction the player wants to move in (length of 1)
 
     // private float minSpeed = 1.0f;
-    private float maxSpeed = 10.0f;
+    private float maxSpeed = 10.0f; // maximum speed the player can move the x or y direction
 
     private float acceleration = 5.0f;
 
-    private float friction = 4.0f;
+    private float friction = 4.0f; // amount the player slows down by each second (doubled when the player's desired move direction is equal to Vector2.zero) 
 
-    private bool dashing = false;
-    private float dashStrength = 1.5f;
-    private float dashCooldown = 60.0f;
+    private bool dashing = false; // true if the player is currently dashing (friction and player movement inputs disabled)
+    private float dashStrength = 1.5f; // amount velocity is multiplied by when performing a dash
+    private float dashCooldown = 60.0f; // time after dash is used before dash can be used again
+    private float dashLength = 30.0f; // how long friction and player movement input is disabled for during a dash
 
     private float dashTimer = 0.0f;
     [SerializeField] private Image dashCooldownImage;
@@ -29,7 +30,12 @@ public class PlayerMovement : MonoBehaviour
     private List<float> speeds = new();
     private float avgSpeed = 0;
 
-    private Vector2 accelerate(Vector2 currVel, Vector2 accelDir, float accelRate, float maxVel)
+    private float calcRampup(float f)
+    {
+        return 2 * f / (f * f + 1);
+    }
+
+    private Vector2 accelerate(Vector2 currVel, Vector2 accelDir, float accelRate, float maxVel, float friction)
     {
         if (accelDir == Vector2.zero)
         {
@@ -39,11 +45,36 @@ public class PlayerMovement : MonoBehaviour
         // multiplying the acceleration by the max velocity makes it so that the player accelerates up to max velocity in the same amount of time, not matter how big it is
         float accelX = accelDir.x * accelRate * maxVel * Time.fixedDeltaTime;
 
+        // alt calculation
+        if (Mathf.Sign(currVel.x) == Mathf.Sign(accelDir.x))
+        {
+            // print("slowing (x)");
+            
+            // float speedToMaxSpeedRatio = Mathf.Clamp01((maxVel - Mathf.Abs(currVel.x)) / maxVel);
+            accelX *= calcRampup(Mathf.Clamp01((maxVel - Mathf.Abs(currVel.x)) / maxVel)); // lower acceleration as current x speed gets closer to max speed
+        }
+
+        /* alt 2
+        if (Mathf.Sign(currVel.x) == Mathf.Sign(accelDir.x))
+        {
+            // print("stopping accel (x)");
+            accelX = accelDir.x * friction * Time.deltaTime;
+        }
+        else if (Mathf.Abs(currVel.x) > maxVel / 2 && Mathf.Sign(currVel.x) == Mathf.Sign(accelDir.x)) // lower acceleration as current x speed gets closer to max speed
+        {
+            // print("slowing accel (x)");
+            accelX /= 2;
+        }
+         */
+
+        /*
         if (Mathf.Abs(currVel.x) > maxVel / 2 && Mathf.Sign(currVel.x) == Mathf.Sign(accelDir.x))
         {
             // print("slowing (x)");
-            accelX *= Mathf.Clamp01((maxVel - Mathf.Abs(currVel.x) + 0.5f)) / maxVel; // lower acceleration as current x speed gets closer to max speed
+            accelX *= Mathf.Clamp01((maxVel - Mathf.Abs(currVel.x) + 0.5f) / maxVel); // lower acceleration as current x speed gets closer to max speed
         }
+         */
+
         // print(accelX);
 
         float accelY = accelDir.y * accelRate * maxVel * Time.fixedDeltaTime;
@@ -51,7 +82,7 @@ public class PlayerMovement : MonoBehaviour
         if (Mathf.Abs(currVel.y) > maxVel / 2 && Mathf.Sign(currVel.y) == Mathf.Sign(accelDir.y))
         {
             // print("slowing (y)");
-            accelY *= Mathf.Clamp01((maxVel - Mathf.Abs(currVel.y) + 0.5f)) / maxVel; // lower acceleration as current x speed gets closer to max speed
+            accelY *= Mathf.Clamp01((maxVel - Mathf.Abs(currVel.y) + 0.5f) / maxVel); // lower acceleration as current y speed gets closer to max speed
         }
         // print(accelY);
 
@@ -75,10 +106,9 @@ public class PlayerMovement : MonoBehaviour
         {
             reduction *= 2;
         }
-        
 
         // multiply current velocity by new speed and divide by current speed to set magnitude equal to the new value (cannot subtract from the vector's magnitude) 
-        currVel *= Mathf.Max(speed - reduction, 0) / speed;  
+        currVel *= Mathf.Max(speed - reduction, 0) / speed;
 
         return currVel;
     }
@@ -106,7 +136,7 @@ public class PlayerMovement : MonoBehaviour
             dashCooldownImage.fillAmount = dashTimer / dashCooldown;
         }
         
-        if (dashTimer < dashCooldown - 15.0f)
+        if (dashTimer < dashCooldown - dashLength)
         {
             dashing = false;
         }
@@ -158,7 +188,7 @@ public class PlayerMovement : MonoBehaviour
         dashing = true;
         dashTimer = dashCooldown;
         dashCooldownImage.fillAmount = 1.0f;
-        rb.velocity = dash(rb.velocity, moveDir, dashStrength, maxSpeed);
+        rb.velocity = dash(rb.velocity, moveDir, dashStrength, avgSpeed);
     }
 
     // Update is called once per frame
@@ -173,9 +203,9 @@ public class PlayerMovement : MonoBehaviour
         if (!dashing)
         {
             rb.velocity = applyFriction(rb.velocity, moveDir, friction);
-            rb.velocity = accelerate(rb.velocity, moveDir, acceleration, maxSpeed);
+            rb.velocity = accelerate(rb.velocity, moveDir, acceleration, maxSpeed, friction);
         }
 
-        // print(rb.velocity.magnitude);
+        print(rb.velocity.magnitude);
     }
 }
