@@ -23,9 +23,12 @@ public class PlayerMovement : MonoBehaviour
     private float dashCooldown = 60.0f; // time after dash is used before dash can be used again
     private float dashLength = 30.0f; // how long friction and player movement input is disabled for during a dash
 
+    
+
+    private float phaseCooldown = 15.0f;
+
     private float dashTimer = 0.0f;
-    [SerializeField] private Image dashCooldownImage;
-    [SerializeField] private Button dashImage;
+    [HideInInspector] public float dashUIFill = 0.0f;
 
     private List<float> speeds = new();
     private float avgSpeed = 0;
@@ -79,10 +82,10 @@ public class PlayerMovement : MonoBehaviour
 
         float accelY = accelDir.y * accelRate * maxVel * Time.fixedDeltaTime;
 
-        if (Mathf.Abs(currVel.y) > maxVel / 2 && Mathf.Sign(currVel.y) == Mathf.Sign(accelDir.y))
+        //if (Mathf.Abs(currVel.y) > maxVel / 2 && Mathf.Sign(currVel.y) == Mathf.Sign(accelDir.y))//
         {
             // print("slowing (y)");
-            accelY *= Mathf.Clamp01((maxVel - Mathf.Abs(currVel.y) + 0.5f) / maxVel); // lower acceleration as current y speed gets closer to max speed
+            accelY *= calcRampup(Mathf.Clamp01((maxVel - Mathf.Abs(currVel.y)) / maxVel)); // lower acceleration as current y speed gets closer to max speed
         }
         // print(accelY);
 
@@ -133,7 +136,7 @@ public class PlayerMovement : MonoBehaviour
         if (dashTimer > 0)
         {
             dashTimer--;
-            dashCooldownImage.fillAmount = dashTimer / dashCooldown;
+            dashUIFill = dashTimer / dashCooldown;
         }
         
         if (dashTimer < dashCooldown - dashLength)
@@ -168,14 +171,17 @@ public class PlayerMovement : MonoBehaviour
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
-
-        dashCooldownImage.fillAmount = 0.0f;
     }
 
     private void OnMove(InputValue moveValue)
     {
         moveDir = moveValue.Get<Vector2>();
         // print(moveDir);
+    }
+
+    private void OnPhase(InputValue iV)
+    {
+        
     }
 
     private void OnDash(InputValue iV)
@@ -187,7 +193,7 @@ public class PlayerMovement : MonoBehaviour
 
         dashing = true;
         dashTimer = dashCooldown;
-        dashCooldownImage.fillAmount = 1.0f;
+        dashUIFill = 1.0f;
         rb.velocity = dash(rb.velocity, moveDir, dashStrength, avgSpeed);
     }
 
@@ -198,7 +204,7 @@ public class PlayerMovement : MonoBehaviour
         storeCurrSpeed();
         findAvgSpeed();
 
-        // print(dashCooldownImage.fillAmount);
+        // print(dashUIFill);
 
         if (!dashing)
         {

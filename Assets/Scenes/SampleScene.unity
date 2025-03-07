@@ -134,7 +134,7 @@ GameObject:
   - component: {fileID: 457003120}
   - component: {fileID: 457003119}
   m_Layer: 5
-  m_Name: Image
+  m_Name: Dash Cooldown Icon
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -429,7 +429,7 @@ GameObject:
   - component: {fileID: 1026634563}
   - component: {fileID: 1026634562}
   m_Layer: 5
-  m_Name: Button
+  m_Name: Dash Icon
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -549,6 +549,7 @@ GameObject:
   - component: {fileID: 1782751834}
   - component: {fileID: 1782751835}
   - component: {fileID: 1782751836}
+  - component: {fileID: 1782751837}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -690,6 +691,19 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0881f884a8b7a5c4cbb6e19bfd376eb1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  dashUIFill: 0
+--- !u!114 &1782751837
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1782751831}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eb64900347849a44cb63f7528086b0df, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   dashCooldownImage: {fileID: 457003119}
@@ -1040,7 +1054,6 @@ SceneRoots:
   - {fileID: 619394802}
   - {fileID: 519420032}
   - {fileID: 1827038814}
-  - {fileID: 519420032}
   - {fileID: 1782751833}
   - {fileID: 1879993200}
   - {fileID: 1790707161}
