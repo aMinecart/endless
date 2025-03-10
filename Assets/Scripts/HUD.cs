@@ -5,15 +5,14 @@ using UnityEngine.UI;
 
 public class HUD : MonoBehaviour
 {
-    private float dashTimer = 0.0f;
     [SerializeField] private Image dashCooldownImage;
     [SerializeField] private Button dashImage;
-    private PlayerMovement playerMovement;
+    private PlayerController playerController;
 
     // Start is called before the first frame update
     void Start()
     {
-        playerMovement = GetComponentInParent<PlayerMovement>();
+        playerController = GetComponentInParent<PlayerController>();
         
         dashCooldownImage.fillAmount = 0.0f;
     }
@@ -21,6 +20,6 @@ public class HUD : MonoBehaviour
     // Update is called once per frame
     void LateUpdate()
     {
-        dashCooldownImage.fillAmount = playerMovement.dashUIFill;
+        dashCooldownImage.fillAmount = playerController.dashUIFill;
     }
 }
