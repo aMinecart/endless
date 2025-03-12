@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.Rendering;
 using UnityEngine.UI;
 
 public class PlayerController : MonoBehaviour
@@ -24,7 +25,7 @@ public class PlayerController : MonoBehaviour
     private float dashStrength = 1.5f; // amount velocity is multiplied by when performing a dash
     private int dashLenience = 5; // how many frames before the dash are checked when calculating the dash strength
 
-    private float dashCooldown = 60.0f; // time after dash is used before dash can be used again
+    private float dashCooldown = 120.0f; // time after dash is used before dash can be used again
     private float dashLength = 20.0f; // how long friction and player movement input is disabled for during a dash
     private float dashTimer = 0.0f; // time remaining until the player can dash again
 
@@ -141,15 +142,30 @@ public class PlayerController : MonoBehaviour
 
     private void unphase(Collider2D col2D, Collider2D trigger2D)
     {
-        if (trigger2D.IsTouchingLayers(3))
+        col2D.enabled = true;
+
+        List<Collider2D> results = new List<Collider2D>();
+        ContactFilter2D contactFilter2D = new();
+        contactFilter2D.NoFilter();
+
+        if (col2D.OverlapCollider(contactFilter2D, results) > 0)
         {
-            gameObject.SetActive(false);
-        }
-        else if (trigger2D.IsTouchingLayers(6))
-        {
+            foreach (Collider2D other2D in results)
+            {
+                if (other2D.gameObject.layer == 3)
+                {
+                    this.gameObject.SetActive(false);
+
+                }
+                else if (other2D.gameObject.layer == 6)
+                {
+                    this.dashTimer = 1.0f;
+
+                    other2D.gameObject.SetActive(false);
+                }
+            }
         }
 
-        col2D.enabled = true;
         GetComponent<SpriteRenderer>().color -= new Color(0.3f, 0.3f, 0.42f, 0);
     }
 
@@ -214,8 +230,7 @@ public class PlayerController : MonoBehaviour
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
-        capCollider = GetComponents<CapsuleCollider2D>()[0];
-        capTrigger = GetComponents<CapsuleCollider2D>()[1];
+        capCollider = GetComponent<CapsuleCollider2D>();
     }
 
     private void OnMove(InputValue moveValue)
@@ -239,7 +254,12 @@ public class PlayerController : MonoBehaviour
 
     private void OnDash()
     {
-        if (dashTimer > 0.0f)
+        if (dashTimer > dashCooldown - dashLength)
+        {
+            dashTimer = dashCooldown - dashLength;
+            return;
+        }
+        else if (dashTimer > 0.0f)
         {
             return;
         }
@@ -280,7 +300,7 @@ public class PlayerController : MonoBehaviour
             rb.velocity = accelerate(rb.velocity, moveDir, acceleration, maxSpeed, friction);
         }
 
-        print(phaseTimer);
+        // print(dashTimer);
         // print(rb.velocity.magnitude);
 
         // change player rigidbody to kniematic using a cast script to do collisons, change player phase so that player disappers if phase ends inside of an object
