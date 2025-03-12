@@ -9,6 +9,7 @@ public class PlayerController : MonoBehaviour
 {
     private Rigidbody2D rb; // rigidbody attached to the player
     private CapsuleCollider2D capCollider; // hitbox attached to the player
+    private CapsuleCollider2D capTrigger; // trigger attached to the player
 
     private Vector2 moveDir; // the direction the player wants to move in (length of 1)
 
@@ -23,14 +24,16 @@ public class PlayerController : MonoBehaviour
     private float dashStrength = 1.5f; // amount velocity is multiplied by when performing a dash
     private int dashLenience = 5; // how many frames before the dash are checked when calculating the dash strength
 
-    private float dashCooldown = 600.0f; // time after dash is used before dash can be used again
+    private float dashCooldown = 60.0f; // time after dash is used before dash can be used again
     private float dashLength = 20.0f; // how long friction and player movement input is disabled for during a dash
     private float dashTimer = 0.0f; // time remaining until the player can dash again
 
     [HideInInspector] public float dashUIFill = 0.0f;
 
-    private bool phasing;
-    private float phaseCooldown = 60.0f; // time after phase is used before phase can be used again
+    private bool phasing = false;
+    private bool phasingInDash = false;
+
+    private float phaseCooldown = 300.0f; // time after phase is used before phase can be used again
     private float phaseLength = 30.0f; // how long the player hitbox is disabled for after phasing
     private float phaseTimer = 0.0f;
 
@@ -136,8 +139,16 @@ public class PlayerController : MonoBehaviour
         GetComponent<SpriteRenderer>().color += new Color(0.3f, 0.3f, 0.42f, 0);
     }
 
-    private void unphase(Collider2D col2D)
+    private void unphase(Collider2D col2D, Collider2D trigger2D)
     {
+        if (trigger2D.IsTouchingLayers(3))
+        {
+            gameObject.SetActive(false);
+        }
+        else if (trigger2D.IsTouchingLayers(6))
+        {
+        }
+
         col2D.enabled = true;
         GetComponent<SpriteRenderer>().color -= new Color(0.3f, 0.3f, 0.42f, 0);
     }
@@ -154,6 +165,12 @@ public class PlayerController : MonoBehaviour
         if (dashing && dashTimer < dashCooldown - dashLength)
         {
             dashing = false;
+
+            if (phasingInDash)
+            {
+                phasingInDash = false;
+                unphase(capCollider, capTrigger);
+            }
         }
 
 
@@ -166,7 +183,7 @@ public class PlayerController : MonoBehaviour
         if (phasing && phaseTimer < phaseCooldown - phaseLength)
         {
             phasing = false;
-            unphase(capCollider);
+            unphase(capCollider, capTrigger);
         }
     }
 
@@ -197,7 +214,8 @@ public class PlayerController : MonoBehaviour
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
-        capCollider = GetComponent<CapsuleCollider2D>();
+        capCollider = GetComponents<CapsuleCollider2D>()[0];
+        capTrigger = GetComponents<CapsuleCollider2D>()[1];
     }
 
     private void OnMove(InputValue moveValue)
@@ -208,7 +226,7 @@ public class PlayerController : MonoBehaviour
 
     private void OnPhase()
     {
-        if (phaseTimer > 0.0f)
+        if (phasingInDash || phaseTimer > 0.0f)
         {
             return;
         }
@@ -230,6 +248,21 @@ public class PlayerController : MonoBehaviour
         dashTimer = dashCooldown;
         
         rb.velocity = dash(rb.velocity, moveDir, dashStrength, avgSpeed);
+
+        bool doDashWithPhase = true;
+        if (doDashWithPhase)
+        {
+            phasingInDash = true;
+
+            if (phasing)
+            {
+                phasing = false;
+            }
+            else
+            {
+                phase(capCollider);
+            }
+        }
     }
 
     // Update is called once per frame
@@ -247,7 +280,8 @@ public class PlayerController : MonoBehaviour
             rb.velocity = accelerate(rb.velocity, moveDir, acceleration, maxSpeed, friction);
         }
 
-        print(rb.velocity.magnitude);
+        print(phaseTimer);
+        // print(rb.velocity.magnitude);
 
         // change player rigidbody to kniematic using a cast script to do collisons, change player phase so that player disappers if phase ends inside of an object
     }
