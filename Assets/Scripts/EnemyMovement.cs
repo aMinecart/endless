@@ -5,6 +5,7 @@ using UnityEngine;
 public class EnemyMovement : MonoBehaviour
 {
     private Rigidbody2D rb;
+    public float initial = 0;
 
     // Start is called before the first frame update
     void Start()
@@ -15,6 +16,6 @@ public class EnemyMovement : MonoBehaviour
     // Update is called once per frame
     void FixedUpdate()
     {
-        rb.velocity = new Vector2(0, 10 * Mathf.Cos(2 * Time.fixedTime));
+        rb.velocity = new Vector2(0, -10 * Mathf.Cos(2 * Time.fixedTime + initial));
     }
 }
