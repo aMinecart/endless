@@ -166,6 +166,14 @@ public class PlayerController : MonoBehaviour
             }
         }
 
+        /*
+        Collider2D[] contacts = new Collider2D[];
+        if (col2D.OverlapCollider(0, contacts) > 0)
+        {
+
+        }
+        */
+
         GetComponent<SpriteRenderer>().color -= new Color(0.3f, 0.3f, 0.42f, 0);
     }
 
